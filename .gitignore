@@ -1,7 +1,1 @@
 .env
-__pycache__/
-*.pyc
-*.pkl
-*.onnx
-*.pt
-.DS_Store

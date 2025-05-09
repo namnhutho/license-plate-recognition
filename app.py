@@ -8,7 +8,7 @@ import psycopg2, time, threading
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
-from upload_to_r2 import upload_image_to_r2
+from upload_to_r2 import upload_image_to_r22
 from fastapi import FastAPI, Response
 import uvicorn
 from concurrent.futures import ThreadPoolExecutor
@@ -122,7 +122,15 @@ def tracking_loop(cap, model, model_plate, ocr):
                             plate_conf=confident_plate,
                             image_name=name_image
                         )
-                        executor.submit(upload_image_to_r2, frame.copy(), name_image)
+                        try:
+                            if hasattr(executor1, "_shutdown") and not executor1._shutdown:
+                                executor1.submit(upload_image_to_r22, frame.copy(), name_image)
+                            else:
+                                print("Executor1 đã shutdown, không thể submit!")
+                        except RuntimeError as e:
+                            print(f"Lỗi submit thread: {e}")
+                        # upload_image_to_r22(frame, name_image)
+                        # executor1.submit(upload_image_to_r22, frame.copy(), name_image)
                         cv2.rectangle(frame, (x1+px1, y1+py1), (x1+px2, y1+py2), (0, 255, 0), 2, cv2.LINE_AA)
 
                         (tw, th), baseline = cv2.getTextSize(plate_text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
@@ -152,15 +160,15 @@ if __name__ == "__main__":
         host=os.getenv("HOST"),
         port=os.getenv("PORT")
     )
-    executor = ThreadPoolExecutor(max_workers=4)  # Tùy máy, 4–8 là ổn
+    executor1 = ThreadPoolExecutor(max_workers=4)  # Tùy máy, 4–8 là ổn
     cursor = conn.cursor()
     model = YOLO("D:\\InternAI\\aaaaaaaa\\best_bikev8n.onnx")
     model_plate = YOLO("D:\\InternAI\\aaaaaaaa\\best_platev8n.onnx")
     # cap = cv2.VideoCapture("D:\\InternAI\\model_2304\\gggg.mp4")
     # cap = cv2.VideoCapture("D:\\yolo_test\\B1_ontap\\test.MOV")
-    # cap=cv2.VideoCapture("D:\\InternAI\\aaaaaaaa\\video_demo_2804v2.mp4")
+    cap=cv2.VideoCapture("D:\\InternAI\\aaaaaaaa\\video_demo_2804v2.mp4")
     # cap=cv2.VideoCapture('http://10.1.2.164:4747/video')
-    cap=cv2.VideoCapture(0)
+    # cap=cv2.VideoCapture(0)
     ocr = PaddleOCR(
         use_angle_cls=True,
         lang='en',
